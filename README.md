@@ -39,7 +39,7 @@ graph TD
     FFmpeg -->|Saves Segments| LocalStorage
     Worker -->|Updates Progress| Redis
     API -->|Polls Status| Redis
-    User <--|Downloads ZIP| API
+    API -->|Downloads ZIP| User
 ```
 
 ## ⚙️ Setup & Installation
