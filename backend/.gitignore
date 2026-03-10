@@ -1,0 +1,18 @@
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Directories
+uploads/
+outputs/
+test_ffmpeg.py
+
+# Keep directories but ignore contents
+!uploads/.gitkeep
+!outputs/.gitkeep
