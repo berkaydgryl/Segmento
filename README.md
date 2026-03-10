@@ -1,6 +1,6 @@
 # Segmento - High-Performance Video Splitter
 
-![Segmento Banner](./assets/banner.png)
+![Segmento Banner](./assets/banner.jpg)
 
 Segmento is a modern, high-performance web application designed for splitting long videos into multiple segments with precision. Built with a professional background processing architecture, it handles heavy video tasks seamlessly without blocking the user interface.
 
