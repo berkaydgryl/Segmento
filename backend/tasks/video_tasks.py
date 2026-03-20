@@ -4,7 +4,10 @@ import uuid
 from typing import List
 from rq import get_current_job
 
-FFMPEG_PATH = r"C:\Users\berka\Desktop\ffmpeg-2026-03-09-git-9b7439c31b-full_build\bin\ffmpeg.exe"
+import shutil
+
+# Try to find ffmpeg in system path, otherwise use a default or env var
+FFMPEG_PATH = os.getenv("FFMPEG_PATH", shutil.which("ffmpeg") or "ffmpeg")
 
 def split_video_task(file_path: str, ranges: List[dict], output_dir: str):
     """

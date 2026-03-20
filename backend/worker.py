@@ -1,5 +1,6 @@
 import sys
 import multiprocessing
+import os
 
 # Windows compatibility monkey-patch for RQ
 if sys.platform == 'win32':
@@ -14,7 +15,8 @@ from redis import Redis
 from rq import SimpleWorker, Queue
 
 listen = ['default']
-redis_conn = Redis(host='localhost', port=6379)
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+redis_conn = Redis.from_url(REDIS_URL)
 
 if __name__ == '__main__':
     # Pass connection directly to Queue and Worker

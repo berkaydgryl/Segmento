@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Upload, Scissors, RefreshCw, Layers } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Upload, Scissors, RefreshCw, Layers, X } from 'lucide-react';
 import { VideoPlayer } from './components/VideoPlayer';
 import { RangeList } from './components/RangeList';
 import type { Range } from './components/RangeList';
@@ -8,7 +8,7 @@ import type { Status } from './components/StatusBanner';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 
-const API_BASE = '/api'; // Use proxy
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 function App() {
   const [file, setFile] = useState<{ id: string; path: string; name: string } | null>(null);
@@ -17,6 +17,7 @@ function App() {
   ]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [activeInputId, setActiveInputId] = useState<string | null>(null);
+  const [showInstructions, setShowInstructions] = useState(true);
 
   // Polling for job status
   const { data: jobStatus } = useQuery({
@@ -48,31 +49,59 @@ function App() {
     }
   };
 
-  const handleAddRange = () => {
-    const newRange: Range = {
-      id: Math.random().toString(36).substr(2, 9),
-      start: '00:00:00',
-      end: '00:00:00'
-    };
-    setRanges([...ranges, newRange]);
-  };
+  const handleAddRange = useCallback(() => {
+    setRanges(prev => [
+      ...prev,
+      { id: Math.random().toString(36).substr(2, 9), start: '', end: '' }
+    ]);
+  }, []);
 
-  const handleUpdateRange = (id: string, field: 'start' | 'end', value: string) => {
-    setRanges(ranges.map(r => r.id === id ? { ...r, [field]: value } : r));
-  };
+  const handleUpdateRange = useCallback((id: string, field: 'start' | 'end', value: string) => {
+    setRanges(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+  }, []);
 
-  const handleRemoveRange = (id: string) => {
-    setRanges(ranges.filter(r => r.id !== id));
-  };
+  const handleRemoveRange = useCallback((id: string) => {
+    setRanges(prev => {
+      if (prev.length <= 1) return prev;
+      return prev.filter(r => r.id !== id);
+    });
+  }, []);
 
-  const handleSetTimestamp = (time: string) => {
-    if (activeInputId) {
-      const [id, field] = activeInputId.split('-') as [string, 'start' | 'end'];
-      handleUpdateRange(id, field, time);
-    }
-  };
+  const handleSetTimestamp = useCallback((time: string) => {
+    if (!activeInputId) return;
 
-  const handleProcess = async () => {
+    setRanges(prev => {
+      const newRanges = prev.map(range => {
+        if (range.id + '-start' === activeInputId) {
+          return { ...range, start: time };
+        }
+        if (range.id + '-end' === activeInputId) {
+          return { ...range, end: time };
+        }
+        return range;
+      });
+
+      // Auto-advance focus logic
+      const [rangeId, type] = activeInputId.split('-');
+      if (type === 'start') {
+        setActiveInputId(rangeId + '-end');
+      } else if (type === 'end') {
+        const currentIndex = newRanges.findIndex(r => r.id === rangeId);
+        if (currentIndex === newRanges.length - 1) {
+          // Last range's end was set, add new range
+          const newId = Math.random().toString(36).substr(2, 9);
+          setActiveInputId(newId + '-start');
+          return [
+            ...newRanges,
+            { id: newId, start: '', end: '' }
+          ];
+        }
+      }
+      return newRanges;
+    });
+  }, [activeInputId]);
+
+  const handleProcess = useCallback(async () => {
     if (!file) return;
     try {
       const resp = await axios.post(`${API_BASE}/split/${file.id}`, {
@@ -85,7 +114,7 @@ function App() {
       alert(`Hata: ${msg}`);
       setJobId(null);
     }
-  };
+  }, [file, ranges]);
 
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-8 max-w-[1600px] mx-auto gap-8">
@@ -138,12 +167,21 @@ function App() {
                 src={"/api/video/" + file.id} // This would need proxy or full URL
                 onSetTimestamp={handleSetTimestamp}
               />
-              <div className="glass p-6 rounded-2xl flex flex-col gap-2">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Nasıl Çalışır?</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Videoyu oynatırken parçalamak istediğin saniyeye gel. "Zamanı Yakala" butonuna basarak başlangıç veya bitiş sürelerini otomatik doldur. İşlemi başlat ve sonucunu bekle.
-                </p>
-              </div>
+              {showInstructions && (
+                <div className="glass p-6 rounded-2xl flex flex-col gap-2 relative animate-in fade-in zoom-in duration-300">
+                  <button
+                    onClick={() => setShowInstructions(false)}
+                    className="absolute top-4 right-4 p-1 hover:bg-secondary rounded-lg text-muted-foreground transition-colors"
+                    title="Kapat"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Nasıl Çalışır?</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed pr-8">
+                    Videoyu oynatırken parçalamak istediğin saniyeye gel. "Zamanı Yakala" butonuna basarak başlangıç veya bitiş sürelerini otomatik doldur. İşlemi başlat ve sonucunu bekle.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Right Col: Controls */}

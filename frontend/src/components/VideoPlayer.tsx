@@ -8,7 +8,7 @@ interface VideoPlayerProps {
     onSetTimestamp: (time: string) => void;
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp }) => {
+export const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({ src, onSetTimestamp }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -42,7 +42,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
     };
 
     const handleCapture = () => {
-        onSetTimestamp(formatTime(currentTime));
+        onSetTimestamp(formatTime(Math.floor(currentTime)));
     };
 
     return (
@@ -63,6 +63,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
                     <div
                         className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer"
                         onClick={togglePlay}
+                        role="button"
+                        aria-label="Videoyu Başlat"
                     >
                         <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center text-primary-foreground shadow-lg hover:scale-110 transition-transform">
                             <Play className="w-8 h-8 fill-current" />
@@ -81,11 +83,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
                         max={duration || 100}
                         step={0.1}
                         onValueChange={seek}
+                        aria-label="Video zaman çizelgesi"
                     >
                         <Slider.Track className="bg-secondary relative grow rounded-full h-[6px]">
                             <Slider.Range className="absolute bg-primary rounded-full h-full" />
                         </Slider.Track>
-                        <Slider.Thumb className="block w-4 h-4 bg-primary shadow-lg rounded-full hover:scale-110 transition-transform focus:outline-none" />
+                        <Slider.Thumb className="block w-4 h-4 bg-primary shadow-lg rounded-full hover:scale-110 transition-transform focus:outline-none" aria-label="Kaydıraç" />
                     </Slider.Root>
                     <span className="text-xs font-mono text-muted-foreground w-12">{formatTime(duration)}</span>
                 </div>
@@ -96,6 +99,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
                             onClick={() => seek([Math.max(0, currentTime - 5)])}
                             className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground relative group"
                             title="5 saniye geri"
+                            aria-label="5 saniye geri al"
                         >
                             <div className="relative">
                                 <RotateCcw className="w-6 h-6" />
@@ -105,6 +109,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
                         <button
                             onClick={togglePlay}
                             className="w-12 h-12 flex items-center justify-center bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/10"
+                            aria-label={isPlaying ? "Durdur" : "Başlat"}
                         >
                             {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-0.5" />}
                         </button>
@@ -112,6 +117,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
                             onClick={() => seek([Math.min(duration, currentTime + 5)])}
                             className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground relative group"
                             title="5 saniye ileri"
+                            aria-label="5 saniye ileri sar"
                         >
                             <div className="relative">
                                 <RotateCw className="w-6 h-6" />
@@ -123,6 +129,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
                     <button
                         onClick={handleCapture}
                         className="flex items-center gap-2 px-4 py-2 bg-secondary/80 border border-border hover:bg-secondary rounded-lg text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        aria-label="Mevcut zamanı yakala"
                     >
                         <MapPin className="w-4 h-4 text-primary" />
                         Zamanı Yakala
@@ -131,4 +138,4 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onSetTimestamp })
             </div>
         </div>
     );
-};
+});

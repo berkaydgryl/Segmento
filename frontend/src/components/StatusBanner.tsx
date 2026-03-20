@@ -49,6 +49,7 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status, progress = 0
                             const jobId = result.job_id || result.task_id;
                             window.location.href = `/api/download/${jobId}`;
                         }}
+                        aria-label="Tüm parçaları ZIP olarak indir"
                     >
                         <Download className="w-3.5 h-3.5" />
                         İndir

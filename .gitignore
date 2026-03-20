@@ -6,13 +6,22 @@ Thumbs.db
 # Project Specific
 agents/
 .agent/
-PLAN-segmento-video-splitter.md
+PLAN-*.md
 package-lock.json
+
+# Dependencies
+node_modules/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# App Data
+backend/uploads/
+backend/outputs/
 
 # Environment
 .env
-.venv/
-env/
-venv/
-venv.bak/
 .env.local
+*.log

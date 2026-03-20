@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+import re
 from pydantic import BaseModel
 from typing import List
 import uuid
@@ -23,20 +24,33 @@ from tasks.video_tasks import split_video_task
 
 app = FastAPI(title="Segmento API")
 
-# CORS for React frontend
+# CORS for React frontend (Vercel or local)
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Custom Middleware for Security Headers
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+    return response
+
 # Setup Redis & RQ
-redis_conn = Redis(host='localhost', port=6379)
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+redis_conn = Redis.from_url(REDIS_URL)
 q = Queue(connection=redis_conn)
 
-UPLOAD_DIR = "uploads"
-OUTPUT_DIR = "outputs"
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -45,17 +59,36 @@ class TimeRange(BaseModel):
     start: str
     end: str
 
+    @classmethod
+    def validate_time(cls, v):
+        if not re.match(r'^(\d{1,2}:)?\d{1,2}:\d{1,2}$', v):
+            raise ValueError('Geçersiz zaman formatı. (HH:MM:SS veya MM:SS olmalı)')
+        return v
+
 class SplitRequest(BaseModel):
     ranges: List[TimeRange]
 
 @app.post("/upload")
 async def upload_video(file: UploadFile = File(...)):
+    # 500MB limit
+    MAX_SIZE = 500 * 1024 * 1024
+    size = 0
     file_id = str(uuid.uuid4())
-    file_extension = os.path.splitext(file.filename)[1]
+    file_extension = os.path.splitext(file.filename)[1].lower()
+    
+    # Simple extension check
+    if file_extension not in ['.mp4', '.mov', '.avi', '.mkv']:
+        raise HTTPException(status_code=400, detail="Desteklenmeyen dosya formatı.")
+
     file_path = os.path.join(UPLOAD_DIR, f"{file_id}{file_extension}")
     
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        while chunk := await file.read(1024 * 1024): # 1MB chunks
+            size += len(chunk)
+            if size > MAX_SIZE:
+                os.remove(file_path)
+                raise HTTPException(status_code=413, detail="Dosya çok büyük (Max 500MB).")
+            buffer.write(chunk)
         
     return {"file_id": file_id, "file_path": file_path}
 
