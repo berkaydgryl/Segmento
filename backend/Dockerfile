@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Ensure start script is executable
+RUN chmod +x start.sh
+
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV UPLOAD_DIR=/app/uploads
@@ -20,6 +23,5 @@ ENV FFMPEG_PATH=ffmpeg
 # Ensure upload directory exists
 RUN mkdir -p /app/uploads
 
-# Default command (Web API)
-# For Worker, override with: python worker.py
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+# Start both services
+CMD ["./start.sh"]
