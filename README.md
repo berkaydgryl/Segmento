@@ -2,6 +2,8 @@
 
 ![Segmento Banner](./assets/banner.jpg)
 
+**Live Demo:** [https://segmento-delta.vercel.app](https://segmento-delta.vercel.app)
+
 Segmento is a modern, high-performance web application designed for splitting long videos into multiple segments with precision. Built with a professional background processing architecture, it handles heavy video tasks seamlessly without blocking the user interface.
 
 ## 📸 Screenshots
@@ -25,21 +27,20 @@ Segmento is a modern, high-performance web application designed for splitting lo
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Backend:** Python, FastAPI, RQ (Redis Queue)
 - **Video Logic:** FFmpeg
-- **Infrastructure:** Docker (for Redis)
+- **Infrastructure:** [Render](https://render.com) (Server), [Vercel](https://vercel.com) (Frontend), [Upstash](https://upstash.com) (Redis)
 
-## 🏗️ Architecture
+## 🏗️ Architecture (Production)
 
 ```mermaid
 graph TD
-    User((User)) -->|Uploads Video| API[FastAPI Backend]
-    API -->|Stores Video| LocalStorage[(Local Storage)]
-    API -->|Enqueues Task| Redis[(Redis)]
-    Redis -->|Triggers| Worker[RQ Worker]
+    User((User)) -->|Vercel| Frontend[Vercel Frontend]
+    Frontend -->|API Requests| RenderAPI[Render Mono-container API]
+    RenderAPI -->|Enqueues Task| Upstash[(Upstash Redis Cloud)]
+    Upstash -->|Triggers| Worker[Render Mono-container Worker]
     Worker -->|Executes FFmpeg| FFmpeg[FFmpeg Logic]
-    FFmpeg -->|Saves Segments| LocalStorage
-    Worker -->|Updates Progress| Redis
-    API -->|Polls Status| Redis
-    API -->|Downloads ZIP| User
+    Worker -->|Updates Status| Upstash
+    RenderAPI -->|Polls Status| Upstash
+    RenderAPI -->|Serves ZIP| User
 ```
 
 ## ⚙️ Setup & Installation
