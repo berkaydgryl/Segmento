@@ -8,7 +8,7 @@ import type { Status } from './components/StatusBanner';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE } from './lib/constants';
 
 function App() {
   const [file, setFile] = useState<{ id: string; path: string; name: string } | null>(null);

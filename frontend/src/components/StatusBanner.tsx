@@ -1,6 +1,7 @@
 import React from 'react';
 import { Loader2, CheckCircle2, AlertCircle, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { API_BASE } from '../lib/constants';
 
 export type Status = 'queued' | 'started' | 'deferred' | 'finished' | 'failed';
 
@@ -47,7 +48,7 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status, progress = 0
                         className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all"
                         onClick={() => {
                             const jobId = result.job_id || result.task_id;
-                            window.location.href = `/api/download/${jobId}`;
+                            window.location.href = `${API_BASE}/download/${jobId}`;
                         }}
                         aria-label="Tüm parçaları ZIP olarak indir"
                     >
