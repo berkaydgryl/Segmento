@@ -42,7 +42,7 @@ function App() {
       const formData = new FormData();
       formData.append('file', uploadedFile);
       const resp = await axios.post(`${API_BASE}/upload`, formData);
-      setFile({ id: resp.data.file_id, path: `${API_BASE}/${resp.data.file_path}`, name: uploadedFile.name });
+      setFile({ id: resp.data.file_id, path: `${API_BASE}/video/${resp.data.file_id}`, name: uploadedFile.name });
     } catch (err) {
       console.error("Upload failed", err);
       alert("Yükleme başarısız oldu.");
@@ -164,7 +164,7 @@ function App() {
             {/* Left Col: Player */}
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-left-4 duration-700">
               <VideoPlayer
-                src={"/api/video/" + file.id} // This would need proxy or full URL
+                src={API_BASE + "/video/" + file.id}
                 onSetTimestamp={handleSetTimestamp}
               />
               {showInstructions && (
