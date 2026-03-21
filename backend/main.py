@@ -8,6 +8,7 @@ import os
 import shutil
 import sys
 import multiprocessing
+import glob
 
 # Windows compatibility monkey-patch for RQ
 if sys.platform == 'win32':
@@ -68,6 +69,33 @@ class TimeRange(BaseModel):
 class SplitRequest(BaseModel):
     ranges: List[TimeRange]
 
+def find_video_file(file_id: str) -> str:
+    """Helper to find a video file by its ID prefix in the upload directory."""
+    print(f"[DEBUG] Searching for file_id: '{file_id}' in {UPLOAD_DIR}")
+    try:
+        files = os.listdir(UPLOAD_DIR)
+        print(f"[DEBUG] Files in {UPLOAD_DIR}: {files}")
+    except Exception as e:
+        print(f"[DEBUG] Error listing {UPLOAD_DIR}: {e}")
+        return None
+
+    # Method 1: listdir startswith
+    for f in files:
+        if f.startswith(file_id):
+            path = os.path.join(UPLOAD_DIR, f)
+            print(f"[DEBUG] Found file via startswith: {path}")
+            return path
+    
+    # Method 2: glob fallback
+    glob_pattern = os.path.join(UPLOAD_DIR, f"{file_id}.*")
+    glob_results = glob.glob(glob_pattern)
+    if glob_results:
+        print(f"[DEBUG] Found file via glob: {glob_results[0]}")
+        return glob_results[0]
+        
+    print(f"[DEBUG] File not found for file_id: {file_id}")
+    return None
+
 @app.post("/upload")
 async def upload_video(file: UploadFile = File(...)):
     # 500MB limit
@@ -94,15 +122,11 @@ async def upload_video(file: UploadFile = File(...)):
 
 @app.post("/split/{file_id}")
 async def start_split(file_id: str, request: SplitRequest):
-    # Find the file
-    file_path = None
-    for f in os.listdir(UPLOAD_DIR):
-        if f.startswith(file_id):
-            file_path = os.path.join(UPLOAD_DIR, f)
-            break
+    # Find the file using our robust helper
+    file_path = find_video_file(file_id)
             
     if not file_path:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail=f"File not found (ID: {file_id})")
         
     # Enqueue the background task
     job = q.enqueue(split_video_task, file_path, [r.dict() for r in request.ranges], OUTPUT_DIR)
@@ -123,14 +147,10 @@ async def get_status(job_id: str):
 
 @app.get("/video/{file_id}")
 async def get_video(file_id: str):
-    file_path = None
-    for f in os.listdir(UPLOAD_DIR):
-        if f.startswith(file_id):
-            file_path = os.path.join(UPLOAD_DIR, f)
-            break
+    file_path = find_video_file(file_id)
             
     if not file_path:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail=f"File not found (ID: {file_id})")
         
     from fastapi.responses import FileResponse
     return FileResponse(file_path)
